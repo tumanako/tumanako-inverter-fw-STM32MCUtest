@@ -149,7 +149,7 @@ int main(void)
 //			v = usart_recv(USART1);	/* find out what */
 //			usart_send(USART1, v );	/* echo it back */
 			command_parse(usart_recv(USART1));	/* execute the command */
-			j++;
+//			j++;
 			gpio_toggle(GPIOC, blue_led);
 		}
 		usart_send(USART1, '\r');
