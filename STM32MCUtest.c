@@ -26,6 +26,7 @@
 #include <libopenstm32/rcc.h>
 #include <libopenstm32/gpio.h>
 #include <libopenstm32/usart.h>
+#include <libopenstm32/adc.h>
 #include <STM32MCU.h>
 
 void clock_setup(void)
@@ -61,6 +62,32 @@ void usart_setup(void)
 	usart_enable(USART1);
 }
 
+void adc_setup(void)
+{
+	int i;
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, ADC1EN);
+	
+	/* make shure it didnt run during config */
+	adc_off(ADC1);
+	
+	/* we configure everything for one single conversion */	
+	adc_disable_scan_mode(ADC1);
+	adc_set_single_conversion_mode(ADC1);
+	adc_enable_discontinous_mode_regular(ADC1);
+	adc_disable_external_trigger_regular(ADC1);
+	adc_set_right_aligned(ADC1);
+	/* we want read out the temperature sensor so we have to enable it */
+	adc_enable_temperature_sensor(ADC1);
+	adc_set_conversion_time_on_all_channels(ADC1, ADC_SMPR_SMP_28DOT5CYC); 
+	
+	adc_on(ADC1);
+	/* wait for adc starting up*/
+        for (i = 0; i < 80000; i++);    /* Wait (needs -O0 CFLAGS). */
+	
+	adc_reset_calibration(ADC1);
+	adc_calibration(ADC1);	
+}
+
 void gpio_setup(void)
 {
 	/* Set LEDs (in GPIO port C) to 'output push-pull'. */
@@ -68,9 +95,46 @@ void gpio_setup(void)
 		      GPIO_CNF_OUTPUT_PUSHPULL, red_led | blue_led);
 }
 
+u8 adcchfromport(int command_port, int command_bit)
+{
+	/* 
+	 PA0 ADC12_IN0
+	 PA1 ADC12_IN1
+	 PA2 ADC12_IN2
+	 PA3 ADC12_IN3
+	 PA4 ADC12_IN4
+	 PA5 ADC12_IN5
+	 PA6 ADC12_IN6
+	 PA7 ADC12_IN7
+	 PB0 ADC12_IN8
+	 PB1 ADC12_IN9
+	 PC0 ADC12_IN10
+	 PC1 ADC12_IN11
+	 PC2 ADC12_IN12
+	 PC3 ADC12_IN13
+	 PC4 ADC12_IN14
+	 PC5 ADC12_IN15
+	 temp ADC12_IN16
+	 */
+	switch (command_port) {
+		case 0: /* port A */
+			if (command_bit<8) return command_bit;
+			break;
+		case 1: /* port B */
+			if (command_bit<2) return command_bit+8;
+			break;
+		case 2: /* port C */
+			if (command_bit<6) return command_bit+10;
+			break;
+	}
+	return 16;
+}
+
 void command_parse(int user_command)
 {
 	static int command_port = 0,	command_bit = 0,	command_action = ' ';
+	int analog_data = 0;
+	static u8 channel_array[16] = {16,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0};
 	static u32 command_portr = GPIOA;
 	switch (user_command) {
 		case 'A': command_port = 0;	command_portr = GPIOA;	break;
@@ -104,7 +168,8 @@ void command_parse(int user_command)
 			break;
 		case 'g': gpio_set_mode(command_portr, GPIO_MODE_INPUT,
 					GPIO_CNF_INPUT_ANALOG, 1 << command_bit);
-			command_action = 'g'; /* todo: turn on analog peripheral*/ 
+			command_action = 'g';
+			channel_array[0] = adcchfromport(command_port,command_bit); /* address adc to current pin*/
 			break;
 		case 's': gpio_set(command_portr, 1 << command_bit);
 			command_action = 's';
@@ -112,12 +177,28 @@ void command_parse(int user_command)
 		case 'r': gpio_clear(command_portr, 1 << command_bit);
 			command_action = 'r';
 			break;
-		
 	}
-	usart_send(USART1, 'A' + command_port );
-	if(command_bit<10)	usart_send(USART1, '0' + command_bit );
+	usart_send(USART1, 'A' + command_port );			/* send port */
+	if(command_bit<10)	usart_send(USART1, '0' + command_bit ); /* send bit  */
 	else			usart_send(USART1, 'a' - 10 + command_bit );
-	usart_send(USART1, command_action );
+	usart_send(USART1, command_action );				/* send command */
+	usart_send(USART1, ' ');
+	if(channel_array[0]<10)	usart_send(USART1, '0' + channel_array[0]); /* send adc ch*/
+	else			usart_send(USART1, 'a' - 10 + channel_array[0]);
+	adc_set_regular_sequence(ADC1, 1, channel_array);
+	adc_on(ADC1);	/* If the ADC_CR2_ON bit is already set -> setting it another time starts the conversion */
+	while (!(ADC_SR(ADC1) & ADC_SR_EOC));	/* Waiting for end of conversion */
+	analog_data = ADC_DR(ADC1);		/* read adc data */
+	if(analog_data > 10000)	{	usart_send(USART1, analog_data/10000 + '0');
+		analog_data -= analog_data/10000;}			/* send adc val*/
+	else usart_send(USART1, ' ');
+	usart_send(USART1, analog_data/1000 + '0');
+	analog_data -= analog_data/1000;
+	usart_send(USART1, analog_data/100 + '0');
+	analog_data -= analog_data/100;
+	usart_send(USART1, analog_data/10 + '0');
+	analog_data -= analog_data/10;
+	usart_send(USART1, analog_data + '0');
 }
 
 int main(void)
@@ -127,8 +208,9 @@ int main(void)
 	clock_setup();
 	gpio_setup();
 	usart_setup();
-
-	/* Blink the LED on the board with every transmitted byte. */
+	adc_setup();		/* todo: check setup of analog peripheral*/
+	
+	/* Blink the LED on the board with every transmitted line refresh */
 	while (1) {
 		gpio_toggle(GPIOC, red_led);	/* LED on/off */
 		for (j = 0; j < 5; j++) {
@@ -146,14 +228,11 @@ int main(void)
 			usart_send(USART1, ' ');
 		}
 		if (USART1_SR & USART_SR_RXNE) { /* if we have received something */
-//			v = usart_recv(USART1);	/* find out what */
-//			usart_send(USART1, v );	/* echo it back */
 			command_parse(usart_recv(USART1));	/* execute the command */
-//			j++;
 			gpio_toggle(GPIOC, blue_led);
 		}
 		usart_send(USART1, '\r');
-		for (i = 0; i < 80000; i++);	/* Wait (needs -O0 CFLAGS). */
+//		for (i = 0; i < 80000; i++);	/* Wait (needs -O0 CFLAGS). */
 	}
 	return 0;
 }
