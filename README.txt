@@ -23,12 +23,12 @@ r   - reset output
 s   - set output
 o   - set pin as output
 i   - set pin as input
-g   - set pin as analog in (not fully implemented yet)
+g   - set pin as analog in
 
 
 Display:
 
-Axxxxxxxx Bxxxxxxxx Cxxxxxxxx Dxxxxxxxx Exxxxxxxx abc
+Axxxxxxxx Bxxxxxxxx Cxxxxxxxx Dxxxxxxxx Exxxxxxxx abc dyyyyy
 
-where x:{0,1}, a:{A-E}, b:{0-f}, c:{i,o,s,r,g}
+where x:{0,1}, a:{A-E}, b:{0-f}, c:{i,o,s,r,g}, d:{0-g}, yyyyy: {0-32000}
 
