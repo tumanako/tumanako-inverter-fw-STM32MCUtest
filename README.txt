@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------
 -  STM32MCUtest:                                                     -
--  (C) Edward Cheeseman <cheesemanedward@gmail.com>                  -
+-  (C) 2010 Edward Cheeseman <cheesemanedward@gmail.com>                  -
 -  A commissioning and fault finding tool for circuits connected to  -
 -  a STM32.                                                          -
 ----------------------------------------------------------------------
@@ -14,7 +14,9 @@ The tool is controlled via USART1, which is set at 38400 8N1.
 
 To use the tool, simply type in a Port (Uppercase A-E), a bit (0-f)
 and a command (r,s,o,i,g). Only change what you need to. Unchanged
-addresses are remembered.
+addresses are remembered. If you want to toggle a pin on and off, once you have set the port and bit you can just press r and s as needed.
+
+Hold down <space> to get an updating analog value.
 
 Commands:
 0-f - working pin

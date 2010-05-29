@@ -32,7 +32,7 @@
 void clock_setup(void)
 {
 	rcc_clock_setup_in_hse_8mhz_out_72mhz();
-
+	
 	/* Enable all present GPIOx clocks. (whats with GPIO F and G?)*/
 	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPAEN);
 	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPBEN);
@@ -49,7 +49,7 @@ void usart_setup(void)
 	/* Setup GPIO pin GPIO_USART3_TX/GPIO10 on GPIO port B for transmit. */
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
                       GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
-
+	
 	/* Setup UART parameters. */
 	usart_set_baudrate(USART1, 38400);
 	usart_set_databits(USART1, 8);
@@ -57,9 +57,16 @@ void usart_setup(void)
 	usart_set_mode(USART1, USART_MODE_TX_RX);
 	usart_set_parity(USART1, USART_PARITY_NONE);
 	usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
-
+	
 	/* Finally enable the USART. */
 	usart_enable(USART1);
+}
+
+void gpio_setup(void)
+{
+	/* Set LEDs (in GPIO port C) to 'output push-pull'. */
+	gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ,
+		      GPIO_CNF_OUTPUT_PUSHPULL, red_led | blue_led);
 }
 
 void adc_setup(void)
@@ -86,13 +93,6 @@ void adc_setup(void)
 	
 	adc_reset_calibration(ADC1);
 	adc_calibration(ADC1);	
-}
-
-void gpio_setup(void)
-{
-	/* Set LEDs (in GPIO port C) to 'output push-pull'. */
-	gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL, red_led | blue_led);
 }
 
 u8 adcchfromport(int command_port, int command_bit)
@@ -188,16 +188,16 @@ void command_parse(int user_command)
 	adc_set_regular_sequence(ADC1, 1, channel_array);
 	adc_on(ADC1);	/* If the ADC_CR2_ON bit is already set -> setting it another time starts the conversion */
 	while (!(ADC_SR(ADC1) & ADC_SR_EOC));	/* Waiting for end of conversion */
-	analog_data = ADC_DR(ADC1);		/* read adc data */
-	if(analog_data > 10000)	{	usart_send(USART1, analog_data/10000 + '0');
-		analog_data -= analog_data/10000;}			/* send adc val*/
+	analog_data = ADC_DR(ADC1) & 0xFFF;		/* read adc data */
+	usart_send(USART1, ' ');
+	if(analog_data > 1000)	usart_send(USART1, analog_data/1000 + '0');
+				/* send adc val*/
 	else usart_send(USART1, ' ');
-	usart_send(USART1, analog_data/1000 + '0');
-	analog_data -= analog_data/1000;
+	analog_data -= ((u8) (analog_data/1000)) * 1000;
 	usart_send(USART1, analog_data/100 + '0');
-	analog_data -= analog_data/100;
+	analog_data -= ((u8) (analog_data/100))  * 100;
 	usart_send(USART1, analog_data/10 + '0');
-	analog_data -= analog_data/10;
+	analog_data -= ((u8) (analog_data/10))   * 10;
 	usart_send(USART1, analog_data + '0');
 }
 
@@ -232,7 +232,11 @@ int main(void)
 			gpio_toggle(GPIOC, blue_led);
 		}
 		usart_send(USART1, '\r');
-//		for (i = 0; i < 80000; i++);	/* Wait (needs -O0 CFLAGS). */
+		for (i = 0; i < 80000; i++);	/* Wait (needs -O0 CFLAGS). */
 	}
 	return 0;
 }
+
+
+
+
