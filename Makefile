@@ -25,10 +25,8 @@ CC		= $(PREFIX)-gcc
 LD		= $(PREFIX)-ld
 OBJCOPY		= $(PREFIX)-objcopy
 OBJDUMP		= $(PREFIX)-objdump
-# Uncomment this line if you want to use the installed (not local) library.
-# TOOLCHAIN_DIR = `dirname \`which $(CC)\``/../$(PREFIX)
-TOOLCHAIN_DIR   = .
-CFLAGS		= -O0 -g -Wall -Wextra -I$(TOOLCHAIN_DIR)/include -fno-common \
+TOOLCHAIN_DIR = `dirname \`which $(CC)\``/../$(PREFIX)
+CFLAGS		= -O0 -g -Wall -Wextra -Iinclude -fno-common \
 		  -mcpu=cortex-m3 -mthumb
 LDSCRIPT	= $(BINARY).ld
 LDFLAGS         = -L$(TOOLCHAIN_DIR)/lib -T$(LDSCRIPT) -nostartfiles
