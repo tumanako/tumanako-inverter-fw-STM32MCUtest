@@ -34,14 +34,14 @@ void clock_setup(void)
 	rcc_clock_setup_in_hse_8mhz_out_72mhz();
 	
 	/* Enable all present GPIOx clocks. (whats with GPIO F and G?)*/
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPAEN);
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPBEN);
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPCEN);
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPDEN);
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, IOPEEN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPBEN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPDEN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_IOPEEN);
 	
 	/* Enable clock for USART1. */
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, USART1EN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_USART1EN);
 }
 
 void usart_setup(void)
@@ -72,7 +72,7 @@ void gpio_setup(void)
 void adc_setup(void)
 {
 	int i;
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, ADC1EN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADC1EN);
 	
 	/* make shure it didnt run during config */
 	adc_off(ADC1);
