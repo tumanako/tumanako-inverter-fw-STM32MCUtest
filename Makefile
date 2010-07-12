@@ -19,8 +19,8 @@
 
 BINARY		= STM32MCUtest
 
-# PREFIX	?= arm-none-eabi
-PREFIX		?= arm-elf
+PREFIX		?= arm-none-eabi
+#PREFIX		?= arm-elf
 CC		= $(PREFIX)-gcc
 LD		= $(PREFIX)-ld
 OBJCOPY		= $(PREFIX)-objcopy
