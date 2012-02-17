@@ -54,7 +54,7 @@ void usart_setup(void)
                       GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
 	
 	/* Setup UART parameters. */
-	usart_set_baudrate(USART1, 38400, rcc_ppre2_frequency);         
+	usart_set_baudrate(USART1, 38400);         
 
 	//u32 clock = rcc_ppre1_frequency;
         //if (usart == USART1) {
