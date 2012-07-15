@@ -32,6 +32,8 @@
 #include <libopencm3/stm32/f1/memorymap.h>
 #include <STM32MCU.h>
 
+void _init(void) {}   // TODO What should this function do?
+
 void clock_setup(void)
 {
 	rcc_clock_setup_in_hse_8mhz_out_72mhz();

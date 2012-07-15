@@ -22,14 +22,15 @@ BINARY		= STM32MCUtest
 PREFIX		?= arm-none-eabi
 #PREFIX		?= arm-elf
 CC		= $(PREFIX)-gcc
-LD		= $(PREFIX)-ld
+LD		= $(PREFIX)-g++
 OBJCOPY		= $(PREFIX)-objcopy
 OBJDUMP		= $(PREFIX)-objdump
 TOOLCHAIN_DIR = `dirname \`which $(CC)\``/../$(PREFIX)
-CFLAGS		= -O0 -g -Wall -Wextra -Iinclude -fno-common \
+CFLAGS		= -O0 -g -Wall -Wextra -Iinclude -I../libopencm3/include -fno-common \
 		  -mcpu=cortex-m3 -mthumb
 LDSCRIPT	= $(BINARY).ld
-LDFLAGS         = -L$(TOOLCHAIN_DIR)/lib -T$(LDSCRIPT) -nostartfiles
+LDFLAGS		= -T$(LDSCRIPT) -nostartfiles -Wl,--gc-sections,-Map=$(BINARY).map \
+		  -mthumb -march=armv7 -L../libopencm3/lib/stm32/f1 
 OBJS		= $(BINARY).o
 
 OPENOCD_BASE	= /usr
@@ -76,6 +77,8 @@ clean:
 	$(Q)rm -f $(BINARY).hex
 	@printf "  CLEAN   $(BINARY).srec\n"
 	$(Q)rm -f $(BINARY).srec
+	@printf "  CLEAN   $(BINARY).map\n"
+	$(Q)rm -f $(BINARY).map
 	@printf "  CLEAN   $(BINARY).list\n"
 	$(Q)rm -f $(BINARY).list
 
